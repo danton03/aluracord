@@ -1,36 +1,49 @@
 import { Box, Text, TextField, Image, Button } from '@skynexui/components';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import appConfig from '../config.json';
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTY0MzM3NDg1NywiZXhwIjoxOTU4OTUwODU3fQ.0HQPcvEJlU1mcK-KzWesP4D4HPZujPMOHP9TEXdbxH0';
+const SUPABASE_URL = 'https://ikusyicwlfssogkuvech.supabase.co';
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 
 export default function ChatPage() {
-  // Sua lógica vai aqui
-
   const [mensagem, setMensagem] = useState('');
   const [listaDeMensagens, setListaDeMensagens] = useState([]);
 
-  /*
-  // Usuário
-  - Usuário digita no campo textarea
-  - Aperta enter para enviar
-  - Tem que adicionar o texto na listagem
-  
-  // Dev
-  - [X] Campo criado
-  - [X] Vamos usar o onChange usa o useState (ter if pra caso seja enter pra limpar a variavel)
-  - [X] Lista de mensagens 
-  */
+  useEffect(() => {
+    supabaseClient
+      .from('mensagens')
+      .select('*')
+      .order('id', { ascending: false })
+      .then(({ data }) => {
+        console.log('Dados da consulta:', data);
+        setListaDeMensagens(data);
+      });
+  }, []);
+
   function handleNovaMensagem(novaMensagem) {
     const mensagem = {
-      id: listaDeMensagens.length + 1,
+      // id: listaDeMensagens.length + 1,
       de: 'danton03',
       texto: novaMensagem,
     };
 
-    setListaDeMensagens([
-      mensagem,
-      ...listaDeMensagens,
-    ]);
+    supabaseClient
+      .from('mensagens')
+      .insert([
+        // Tem que ser um objeto com os MESMOS CAMPOS que você escreveu no supabase
+        mensagem
+      ])
+      .then(({ data }) => {
+        console.log('Criando mensagem: ', data);
+        setListaDeMensagens([
+          data[0],
+          ...listaDeMensagens,
+        ]);
+      });
+
     setMensagem('');
   }
 
@@ -73,12 +86,12 @@ export default function ChatPage() {
         >
           <MessageList mensagens={listaDeMensagens} />
           {/* {listaDeMensagens.map((mensagemAtual) => {
-                      return (
-                          <li key={mensagemAtual.id}>
-                              {mensagemAtual.de}: {mensagemAtual.texto}
-                          </li>
-                      )
-                  })} */}
+                        return (
+                            <li key={mensagemAtual.id}>
+                                {mensagemAtual.de}: {mensagemAtual.texto}
+                            </li>
+                        )
+                    })} */}
           <Box
             as="form"
             styleSheet={{
@@ -177,7 +190,7 @@ function MessageList(props) {
                   display: 'inline-block',
                   marginRight: '8px',
                 }}
-                src={`https://github.com/danton03.png`}
+                src={`https://github.com/${mensagem.de}.png`}
               />
               <Text tag="strong">
                 {mensagem.de}
