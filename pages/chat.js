@@ -13,7 +13,7 @@ function escutaMensagensEmTempoReal(adicionaMensagem) {
   return supabaseClient
     .from('mensagens')
     .on('INSERT', (respostaLive) => {
-      adicionaMensagem(respostaLive?.new);
+      adicionaMensagem(respostaLive.new);
     })
     .subscribe();
 }
