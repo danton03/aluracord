@@ -9,6 +9,14 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5v
 const SUPABASE_URL = 'https://ikusyicwlfssogkuvech.supabase.co';
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+function escutaMensagensEmTempoReal(adicionaMensagem) {
+  return supabaseClient
+    .from('mensagens')
+    .on('INSERT', (respostaLive) => {
+      adicionaMensagem(respostaLive?.new);
+    })
+    .subscribe();
+}
 
 export default function ChatPage() {
   const roteamento = useRouter();
@@ -26,6 +34,15 @@ export default function ChatPage() {
         console.log('Dados da consulta:', data);
         setListaDeMensagens(data);
       });
+
+    escutaMensagensEmTempoReal((novaMensagem) => {
+      setListaDeMensagens((valorAtualDaLista) => {
+        return [
+          novaMensagem,
+          ...valorAtualDaLista,
+        ]
+      });
+    });
   }, []);
 
   function handleNovaMensagem(novaMensagem) {
@@ -43,10 +60,6 @@ export default function ChatPage() {
       ])
       .then(({ data }) => {
         console.log('Criando mensagem: ', data);
-        setListaDeMensagens([
-          data[0],
-          ...listaDeMensagens,
-        ]);
       });
 
     setMensagem('');
@@ -129,7 +142,11 @@ export default function ChatPage() {
                 color: appConfig.theme.colors.neutrals[200],
               }}
             />
-            <ButtonSendSticker />
+            <ButtonSendSticker
+              onStickerClick={(sticker) => {
+                console.log('Salva esse sticker no db: ', sticker);
+                handleNovaMensagem(':sticker: ' + sticker);
+              }} />
           </Box>
         </Box>
       </Box>
@@ -212,8 +229,21 @@ function MessageList(props) {
                 {(new Date().toLocaleDateString())}
               </Text>
             </Box>
-            { }
-            {mensagem.texto}
+            {/*Ao selecionar um sticker para enviar será enviado na
+              verdade um texto, que segue um modelo.
+              Cada sticker seguirá o seguinte modelo: 
+              :sticker:URL_do_Sticker_no_arquivo_ButtonSendSticker.js
+              Se a mensagem tiver a identificação de sticker... 
+            */}
+            {mensagem.texto.startsWith(':sticker:')
+              ? (
+                /* Remove-se a identificação do sticker e renderiza a imagem repassada pelo link */
+                <Image src={mensagem.texto.replace(':sticker:', '')} />
+              )
+              : (
+                /* Senão, só envia a mensagem */
+                mensagem.texto
+              )}
           </Text>
         );
       })}
